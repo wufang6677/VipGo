@@ -32,7 +32,7 @@
           </div>
         </div>
       </a-list-item>
-      <a-empty v-if="list.length===0" style="margin-top: 20%;color: #555555" description="暂无数据"/>
+      <a-empty v-if="list.length===0" style="margin-top: 20%;color: #555555;user-select: none" description="暂无数据"/>
     </div>
   </div>
 </template>

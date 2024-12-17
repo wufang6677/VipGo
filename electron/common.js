@@ -1,6 +1,5 @@
 const {app, Menu, ipcMain, globalShortcut, shell, dialog, AbortController} = require('electron');
 const path = require('path');
-const EAU = require('electron-asar-hot-updater');
 const crypto = require('crypto');
 const {spawn} = require('child_process');
 const fs = require('fs');
@@ -36,53 +35,54 @@ function initGlobalShortcut(win) {
 }
 
 // 热更新不使用
-function hotUpdate() {
-    EAU.init({
-        'api': 'http://127.0.0.1:10000/updateApp',
-        'server': true,
-        'debug': false,
-        'headers': {Authorization: 'token'},
-        'body': {
-            name: app.getName(),
-            current: app.getVersion()
-        },
-    });
-
-    EAU.check(function (error, last, body) {
-        if (error) {
-            if (error === 'no_update_available') {
-                const options = {title: "温馨提示", type: "info", message: "已经是最新版本!"}
-                dialog.showMessageBox(options).then()
-                return false;
-            }
-            if (error === 'cannot_connect_to_api') {
-                const options = {title: "温馨提示", type: "info", message: "不支持热更新!"}
-                dialog.showMessageBox(options).then()
-                return false;
-            }
-            dialog.showErrorBox("", error)
-            return false
-        }
-
-        EAU.progress(function (state) {
-        })
-
-        EAU.download(function (error) {
-            if (error) {
-                dialog.showErrorBox("", error)
-                return false
-            }
-            setTimeout(() => {
-                if (process.platform === 'darwin') {
-                    app.relaunch()
-                    app.quit()
-                } else {
-                    app.quit()
-                }
-            }, 2000);
-        })
-    })
-}
+// function hotUpdate() {
+//     const EAU = require('electron-asar-hot-updater');
+//     EAU.init({
+//         'api': 'http://127.0.0.1:10000/updateApp',
+//         'server': true,
+//         'debug': false,
+//         'headers': {Authorization: 'token'},
+//         'body': {
+//             name: app.getName(),
+//             current: app.getVersion()
+//         },
+//     });
+//
+//     EAU.check(function (error, last, body) {
+//         if (error) {
+//             if (error === 'no_update_available') {
+//                 const options = {title: "温馨提示", type: "info", message: "已经是最新版本!"}
+//                 dialog.showMessageBox(options).then()
+//                 return false;
+//             }
+//             if (error === 'cannot_connect_to_api') {
+//                 const options = {title: "温馨提示", type: "info", message: "不支持热更新!"}
+//                 dialog.showMessageBox(options).then()
+//                 return false;
+//             }
+//             dialog.showErrorBox("", error)
+//             return false
+//         }
+//
+//         EAU.progress(function (state) {
+//         })
+//
+//         EAU.download(function (error) {
+//             if (error) {
+//                 dialog.showErrorBox("", error)
+//                 return false
+//             }
+//             setTimeout(() => {
+//                 if (process.platform === 'darwin') {
+//                     app.relaunch()
+//                     app.quit()
+//                 } else {
+//                     app.quit()
+//                 }
+//             }, 2000);
+//         })
+//     })
+// }
 
 function initCreateBeforeEvent(port) {
     ipcMain.handle('getPort', () => {

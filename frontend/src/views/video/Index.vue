@@ -9,6 +9,7 @@
         <div v-if="name!==item" style="color: #333">{{ item.replace(".mp4", "") }}</div>
         <div v-if="name===item" style="color: #29cf74">{{ item.replace(".mp4", "") }}</div>
       </a-list-item>
+      <a-empty v-if="list.length===0" style="margin-top: 50%;color: #555555;user-select: none" description="暂无数据"/>
     </a-layout-sider>
     <div style="z-index: 999;position: fixed;top: 10px; left: 110px;color: white">{{ name }}</div>
   </div>

@@ -1,5 +1,5 @@
 {
-  "productName": "tool",
+  "productName": "VipGo",
   "appId": "com.yuxie.tool",
   "copyright": "© 2024 yuxie",
   "directories": {
@@ -32,8 +32,10 @@
   },
   "publish": [
     {
-      "provider": "generic",
-      "url": "https://github.com/yuxie2025/VipGo"
+      "provider": "github",
+      "owner": "yuxie2025",
+      "repo": "VipGo",
+      "releaseType": "release"
     }
   ],
   "mac": {

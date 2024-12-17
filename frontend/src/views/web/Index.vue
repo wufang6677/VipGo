@@ -12,6 +12,7 @@
           </div>
         </div>
       </a-list-item>
+      <a-empty v-if="list.length===0" style="margin-top: 50%;color: #555555;user-select: none" description="暂无数据"/>
     </a-layout-sider>
   </div>
 </template>

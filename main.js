@@ -1,6 +1,6 @@
 const {app, BrowserWindow} = require('electron')
 const path = require('path')
-const {updateElectronApp, UpdateSourceType} = require('update-electron-app')
+const {autoUpdater} = require("electron-updater")
 
 let port = 3300
 
@@ -9,15 +9,6 @@ require('./electron/server').init().then(re => {
     port = re;
 }).catch(err => {
     console.log("err", err)
-})
-
-
-//git更新
-updateElectronApp({
-    updateSource: {
-        type: UpdateSourceType.ElectronPublicUpdateService,
-        repo: 'yuxie2025/VipGo'
-    }
 })
 
 const createWindow = () => {
@@ -44,6 +35,7 @@ const createWindow = () => {
     return win
 }
 app.whenReady().then(() => {
+
     require('./electron/common.js').initCreateBeforeEvent(port)
 
     const win = createWindow()
@@ -56,6 +48,12 @@ app.whenReady().then(() => {
         // 在 macOS 系统内, 如果没有已开启的应用窗口,点击托盘图标时通常会重新创建一个新窗口
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
+
+    setTimeout(() => {
+        autoUpdater.checkForUpdates().then(re => {
+            console.log("checkForUpdates:", re)
+        });
+    }, 30000)
 })
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()
