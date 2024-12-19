@@ -1,6 +1,7 @@
 const {app, BrowserWindow} = require('electron')
 const path = require('path')
 const {autoUpdater} = require("electron-updater")
+const common = require('./electron/common.js')
 
 let port = 3300
 
@@ -10,12 +11,15 @@ require('./electron/server').init().then(re => {
 }).catch(err => {
     console.log("err", err)
 })
+let windowState = common.appInfo();
 
 const createWindow = () => {
     const win = new BrowserWindow({
         title: 'VipGo',
-        width: 1920,
-        height: 1080,
+        x: windowState.x,
+        y: windowState.y,
+        width: windowState.width,
+        height: windowState.height,
         minWidth: 980,
         minHeight: 650,
         webPreferences: {
@@ -24,36 +28,37 @@ const createWindow = () => {
         }
     })
 
-    require('./electron/common.js').loadHtml(win)
+    win.on('close', () => {
+        windowState.saveWindowState(win);
+    });
+
+    common.loadHtml(win)
 
     //win.webContents.openDevTools()
 
     app.commandLine.appendSwitch('lang', 'zh-CN');
 
     //初始化Event和Menu
-    require('./electron/common.js').init(win, __dirname, port)
+    common.init(win, __dirname, port)
     return win
 }
 app.whenReady().then(() => {
-
-    require('./electron/common.js').initCreateBeforeEvent(port)
+    //注册createWindow前Event
+    common.initCreateBeforeEvent(port)
 
     const win = createWindow()
 
     //  注册热键功能(createWindow后才能生效)
-    require('./electron/common.js').initGlobalShortcut(win)
-    require('./electron/common.js').initCreateAfterEvent(win)
+    common.initGlobalShortcut(win)
+    // 注册createWindow后Event
+    common.initCreateAfterEvent(win)
 
     app.on('activate', () => {
         // 在 macOS 系统内, 如果没有已开启的应用窗口,点击托盘图标时通常会重新创建一个新窗口
         if (BrowserWindow.getAllWindows().length === 0) createWindow()
     })
-
-    setTimeout(() => {
-        autoUpdater.checkForUpdates().then(re => {
-            console.log("checkForUpdates:", re)
-        });
-    }, 30000)
+    //检测更新
+    autoUpdater.checkForUpdates().then();
 })
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit()

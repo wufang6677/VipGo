@@ -1,29 +1,60 @@
-const {app, Menu, ipcMain, globalShortcut, shell, dialog, AbortController} = require('electron');
+const {app, Menu, ipcMain, globalShortcut, shell, dialog} = require('electron');
 const path = require('path');
 const crypto = require('crypto');
 const {spawn} = require('child_process');
 const fs = require('fs');
+
 let mainWindow
-let new_path
-
+//记录解析视频列表数据
 let new_list_titles = {}
-
+//记录下载进程对象
 let spawnList = {}
 
+const isDev = process.env.NODE_ENV && process.env.NODE_ENV.trim() === 'dev';
 
-const is_dev = () => {
-    return process.env.NODE_ENV && process.env.NODE_ENV.trim().trim() === 'dev';
+
+const appInfo = () => {
+    let appInfo = {
+        x: undefined,
+        y: undefined,
+        width: 1366,
+        height: 820
+    };
+
+    const appInfoFile = path.join(app.getPath('userData'), 'app_info.json');
+    try {
+        const state = JSON.parse(fs.readFileSync(appInfoFile, 'utf-8'));
+        Object.assign(appInfo, state);
+    } catch (err) {
+    }
+
+    return {
+        x: appInfo.x,
+        y: appInfo.y,
+        width: appInfo.width,
+        height: appInfo.height,
+        saveWindowState: (window) => {
+            const bounds = window.getBounds();
+            appInfo['x'] = bounds.x
+            appInfo['y'] = bounds.y
+            appInfo['width'] = bounds.width
+            appInfo['height'] = bounds.height
+            fs.writeFileSync(appInfoFile, JSON.stringify(appInfo));
+        }
+    };
 };
 
+
+//加载html
 function loadHtml(win) {
-    if (is_dev()) {
+    if (isDev) {
         win.loadURL("http://127.0.0.1:8080").then()
     } else {
         win.loadFile('public/dist/index.html').then()
     }
 }
 
-// 注册热键功能
+// 注册热键功能(createWindow后才能生效)
 function initGlobalShortcut(win) {
     globalShortcut.register("F10", () => {
         win.toggleDevTools(); // 切换开发工具
@@ -34,62 +65,14 @@ function initGlobalShortcut(win) {
     });
 }
 
-// 热更新不使用
-// function hotUpdate() {
-//     const EAU = require('electron-asar-hot-updater');
-//     EAU.init({
-//         'api': 'http://127.0.0.1:10000/updateApp',
-//         'server': true,
-//         'debug': false,
-//         'headers': {Authorization: 'token'},
-//         'body': {
-//             name: app.getName(),
-//             current: app.getVersion()
-//         },
-//     });
-//
-//     EAU.check(function (error, last, body) {
-//         if (error) {
-//             if (error === 'no_update_available') {
-//                 const options = {title: "温馨提示", type: "info", message: "已经是最新版本!"}
-//                 dialog.showMessageBox(options).then()
-//                 return false;
-//             }
-//             if (error === 'cannot_connect_to_api') {
-//                 const options = {title: "温馨提示", type: "info", message: "不支持热更新!"}
-//                 dialog.showMessageBox(options).then()
-//                 return false;
-//             }
-//             dialog.showErrorBox("", error)
-//             return false
-//         }
-//
-//         EAU.progress(function (state) {
-//         })
-//
-//         EAU.download(function (error) {
-//             if (error) {
-//                 dialog.showErrorBox("", error)
-//                 return false
-//             }
-//             setTimeout(() => {
-//                 if (process.platform === 'darwin') {
-//                     app.relaunch()
-//                     app.quit()
-//                 } else {
-//                     app.quit()
-//                 }
-//             }, 2000);
-//         })
-//     })
-// }
-
+// 注册createWindow前Event
 function initCreateBeforeEvent(port) {
     ipcMain.handle('getPort', () => {
         return port
     })
 }
 
+// 注册createWindow后Event
 function initCreateAfterEvent(win) {
     win.webContents.session.webRequest.onBeforeSendHeaders((details, callback) => {
         // 请求的 url => details.url
@@ -108,32 +91,9 @@ function initCreateAfterEvent(win) {
             getVideoList(response.data)
         })
     })
-
-    // win.webContents.session.webRequest.onCompleted((response) => {
-    //         const url = response.url
-    //         let title = win.webContents.getTitle().replace(" ", "_")
-    //
-    //         if (!url.endsWith("index.m3u8") || url.indexOf("/hls/") >= 0) {
-    //             return
-    //         }
-    //         console.log("check m3u8 url")
-    //         console.log(url, new_list_titles[url], title)
-    //         const options = {
-    //             title: "温馨提示",
-    //             message: "检测到视频,是否下载?",
-    //             buttons: ["否", "是"]
-    //         }
-    //         dialog.showMessageBox(win, options).then((value) => {
-    //             if (value.response === 0) {
-    //                 return
-    //             }
-    //             const fileName = new_list_titles[url] ? new_list_titles[url] : title
-    //             downloadVideo(win, {url: url, name: fileName})
-    //         })
-    //     }
-    // )
 }
 
+//============嗅探下载视频 start============
 function downloadVideo(win, data) {
 
     const url = data['url']
@@ -281,19 +241,22 @@ function re(text) {
     return text
 }
 
+//============嗅探下载视频 end============
+
 //初始化Event和Menu,electron和vue交互方法注册
 function init(win, path, port) {
+    mainWindow = win
     // 监听全屏事件
     win.on('enter-full-screen', () => {
         Menu.setApplicationMenu(null);
     });
     // 监听退出全屏事件
     win.on('leave-full-screen', () => {
-        Menu.setApplicationMenu(Menu.buildFromTemplate(initMenu(win, path)));
+        Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
     });
 
     //  初始化菜单
-    Menu.setApplicationMenu(Menu.buildFromTemplate(initMenu(win, path)));
+    Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate));
 
     // 拦截新打开窗口
     win.webContents.setWindowOpenHandler(({url}) => {
@@ -321,26 +284,16 @@ function init(win, path, port) {
         }
     })
 
-    // console日志保证本地文件,路径：C:\Users\Administrator\AppData\Roaming\tool
+    // 初始化console日志
     initLogFile()
 }
 
-function initMenu(window, path) {
-    mainWindow = window
-    new_path = path
-    return template
-}
-
-const template = [
+//菜单
+const menuTemplate = [
     {
         label: '⏮',
         click: async () => {
             mainWindow.webContents.navigationHistory.goBack();
-            setTimeout(() => {
-                if (mainWindow.webContents.getURL().endsWith("/html/loading.html")) {
-                    mainWindow.webContents.navigationHistory.goForward();
-                }
-            }, 1000)
         }
     },
     {
@@ -361,12 +314,6 @@ const template = [
             loadHtml(mainWindow)
         }
     },
-    // {
-    //     label: 'ℹ',
-    //     click: async () => {
-    //         hotUpdate()
-    //     }
-    // },
     {
         label: '⏹',
         click: async () => {
@@ -375,6 +322,7 @@ const template = [
     }
 ]
 
+//日志 path：C:\Users\Administrator\AppData\Roaming\VipGo
 function initLogFile() {
     const path = require('path')
     const fs = require('fs')
@@ -409,4 +357,4 @@ function initLogFile() {
     };
 }
 
-module.exports = {init, initGlobalShortcut, initCreateBeforeEvent, initCreateAfterEvent, loadHtml}
+module.exports = {init, initGlobalShortcut, initCreateBeforeEvent, initCreateAfterEvent, loadHtml, appInfo}
