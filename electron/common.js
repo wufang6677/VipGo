@@ -99,14 +99,14 @@ function downloadVideo(win, data) {
     const url = data['url']
 
     let appPath = path.dirname(app.getAppPath())
-    if (is_dev()) {
+    if (isDev) {
         appPath = app.getAppPath()
     }
 
     let save_dir = app.getPath("downloads")
 
     let exePath = appPath + "\\extraResources\\N_m3u8DL-RE.exe"
-    if (is_dev()) {
+    if (isDev) {
         exePath = appPath + "\\build\\extraResources\\N_m3u8DL-RE.exe"
     }
 
