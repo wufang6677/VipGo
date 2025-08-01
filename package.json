@@ -6,9 +6,9 @@
   "scripts": {
     "start": "chcp 65001&&set NODE_ENV=dev && electron .",
     "dev": "cd frontend && npm run dev",
-    "build": "cd frontend && npm install && npm run build && cd .. && electron .",
-    "prod": "cd frontend && npm install && npm run build && cd .. && electron-builder --config=./electron/config/builder.json -w=nsis --x64",
-    "release": "cd frontend && npm run build && cd .. && electron-builder --config=./electron/config/builder.json -w=nsis --x64 --publish always",
+    "build": "cd frontend && npm install && npm run build",
+    "prod": "cd frontend && npm install && npm run build",
+    "release": "cd frontend && npm install && npm run build",
     "rebuild": "electron-rebuild",
     "build-w": "electron-builder --config=./electron/config/builder.json -w=nsis --x64",
     "build-w-32": "electron-builder --config=./electron/config/builder.json -w=nsis --ia32",
